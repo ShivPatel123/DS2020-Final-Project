@@ -1,0 +1,24 @@
+---
+title: 'Impact of Speeding and Vehicle Types on Crash Severity'
+author: "Team Members: Shivansh Patel, Manas Mathur, Muhammad Saleem"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Research Topic
+
+The research project aims to analyze the **impact of speeding and vehicle types on crash severity**. We are interested in understanding whether there is a significant relationship between different vehicle types, speeding incidents, and the severity of crashes that occur on the roads.
+
+## Team Members
+
+- Shivansh Patel
+- Manas Mathur
+- Muhammad Saleem
+
+## Data Description and Cleaning Steps
+
+For our analysis, we will use a dataset obtained from **https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f, or https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot, or 
+https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/**, which contains detailed information on road crashes, including vehicle types involved, speed at the time of the crash, crash severity, weather conditions, and other related features.
