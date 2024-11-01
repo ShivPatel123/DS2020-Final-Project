@@ -363,7 +363,10 @@ Saleem</h4>
 and vehicle types on crash severity</strong>. We are interested in
 understanding whether there is a significant relationship between
 different vehicle types, speeding incidents, and the severity of crashes
-that occur on the roads.</p>
+that occur on the roads. Additionally, we will compare the <strong>crash
+fatality rate of U.S. crashes</strong> with crashes on the
+<strong>Autobahn</strong>, where there are segments with no speed limit,
+to understand the impact of speed regulations on crash outcomes.</p>
 </div>
 <div id="team-members" class="section level2">
 <h2>Team Members</h2>
@@ -375,12 +378,107 @@ that occur on the roads.</p>
 </div>
 <div id="data-description-and-cleaning-steps" class="section level2">
 <h2>Data Description and Cleaning Steps</h2>
-<p>For our analysis, we will use a dataset obtained from <strong><a href="https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f" class="uri">https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f</a>,
-or <a href="https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot" class="uri">https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot</a>,
-or <a href="https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/" class="uri">https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/</a></strong>,
-which contains detailed information on road crashes, including vehicle
-types involved, speed at the time of the crash, crash severity, weather
-conditions, and other related features.</p>
+<p>For our analysis, we will use multiple datasets obtained from the
+following sources:</p>
+<ul>
+<li><p><strong>U.S. Crash Data</strong>: Data obtained from <a href="https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f">catalog.data.gov</a>
+and other sources like the <a href="https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot">Insurance
+Institute for Highway Safety (IIHS)</a> and the <a href="https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/">National
+Highway Traffic Safety Administration (NHTSA)</a>. This dataset
+(<code>US.csv</code>) contains detailed information on crashes that
+occurred in the United States, including vehicle types, speeding status,
+crash severity, and weather conditions.</p></li>
+<li><p><strong>Autobahn Crash Data</strong>: Data obtained from an
+<strong>Excel dataset titled <code>AutoBahn.xls</code></strong> that
+contains crash information for the Autobahn, where some sections do not
+have speed limits. The dataset includes details on crash fatalities,
+vehicle types, and factors influencing crash severity.</p></li>
+</ul>
+<div id="loading-the-data" class="section level3">
+<h3>Loading the Data</h3>
+<p>First, we will load both datasets into R for further analysis.</p>
+<pre class="r"><code># Load necessary packages
+library(dplyr)
+library(ggplot2)
+library(readxl)
+
+# Load the U.S. crash data
+#us_crash_data &lt;- read.csv(&quot;US.csv&quot;)
+
+# Load the Autobahn crash data
+#autobahn_data &lt;- read_excel(&quot;AutoBahn.xls&quot;)
+
+# View the structure of both datasets
+#str(us_crash_data)
+#str(autobahn_data)</code></pre>
+</div>
+<div id="initial-data-cleaning" class="section level3">
+<h3>Initial Data Cleaning</h3>
+<p>We will start by cleaning both datasets to remove missing or
+incorrect data entries, harmonize variable names, and prepare them for
+comparison.</p>
+<pre class="r"><code># Cleaning U.S. crash data
+#us_crash_data_clean &lt;- us_crash_data
+
+# Cleaning Autobahn crash data
+#autobahn_data_clean &lt;- autobahn_data
+
+# Summary of cleaned datasets
+#summary(us_crash_data_clean)
+#summary(autobahn_data_clean)</code></pre>
+</div>
+<div id="marginal-summaries" class="section level3">
+<h3>Marginal Summaries</h3>
+<p>After cleaning the data, we generate marginal summaries to understand
+the distribution of key variables, such as <strong>crash
+severity</strong>, <strong>vehicle type</strong>, and <strong>speeding
+involvement</strong> in both datasets.</p>
+<pre class="r"><code># Marginal summaries of U.S. crash data
+#summary(us_crash_data_clean$crash_severity)
+#table(us_crash_data_clean$vehicle_type)
+#table(us_crash_data_clean$speeding)
+
+# Marginal summaries of Autobahn crash data
+#summary(autobahn_data_clean$Crash_Severity)
+#table(autobahn_data_clean$Vehicle_Type)
+#table(autobahn_data_clean$Fatality)</code></pre>
+</div>
+</div>
+<div id="questions-to-be-addressed" class="section level2">
+<h2>Questions to Be Addressed</h2>
+<div id="fleshed-out-project-idea" class="section level3">
+<h3>Fleshed Out Project Idea</h3>
+<p>The primary questions we aim to address in this project are:</p>
+<ol style="list-style-type: decimal">
+<li><strong>How does speeding impact the severity of crashes on U.S.
+roads compared to the Autobahn?</strong>
+<ul>
+<li>We will investigate whether crashes involving speeding tend to have
+higher severity in the U.S. compared to the Autobahn, where some
+segments have no speed limit.</li>
+</ul></li>
+<li><strong>Is there a significant difference in crash fatality rates
+between U.S. crashes and Autobahn crashes?</strong>
+<ul>
+<li>We will compare the fatality rates of crashes on U.S. roads versus
+those on the Autobahn to understand the impact of speed limits on crash
+outcomes.</li>
+</ul></li>
+<li><strong>Do certain vehicle types result in more severe crashes on
+U.S. roads compared to the Autobahn?</strong>
+<ul>
+<li>We will examine whether certain vehicle types (e.g., motorcycles,
+SUVs, trucks) are more prone to severe crashes and compare the results
+between the U.S. and the Autobahn.</li>
+</ul></li>
+</ol>
+<p>To answer these questions, we will use data visualizations such as
+<strong>bar charts</strong>, <strong>histograms</strong>, and
+<strong>scatterplots</strong>, along with <strong>statistical
+modeling</strong> where appropriate. We also plan to consider possible
+confounding variables such as weather conditions, road type, and driver
+behavior.</p>
+</div>
 </div>
 
 

@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Research Topic
 
-The research project aims to analyze the **impact of speeding and vehicle types on crash severity**. We are interested in understanding whether there is a significant relationship between different vehicle types, speeding incidents, and the severity of crashes that occur on the roads.
+The research project aims to analyze the **impact of speeding and vehicle types on crash severity**. We are interested in understanding whether there is a significant relationship between different vehicle types, speeding incidents, and the severity of crashes that occur on the roads. Additionally, we will compare the **crash fatality rate of U.S. crashes** with crashes on the **Autobahn**, where there are segments with no speed limit, to understand the impact of speed regulations on crash outcomes.
 
 ## Team Members
 
@@ -20,5 +20,78 @@ The research project aims to analyze the **impact of speeding and vehicle types 
 
 ## Data Description and Cleaning Steps
 
-For our analysis, we will use a dataset obtained from **https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f, or https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot, or 
-https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/**, which contains detailed information on road crashes, including vehicle types involved, speed at the time of the crash, crash severity, weather conditions, and other related features.
+For our analysis, we will use multiple datasets obtained from the following sources:
+
+- **U.S. Crash Data**: Data obtained from [catalog.data.gov](https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f) and other sources like the [Insurance Institute for Highway Safety (IIHS)](https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot) and the [National Highway Traffic Safety Administration (NHTSA)](https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/). This dataset (`US.csv`) contains detailed information on crashes that occurred in the United States, including vehicle types, speeding status, crash severity, and weather conditions.
+
+- **Autobahn Crash Data**: Data obtained from an **Excel dataset titled `AutoBahn.xls`** that contains crash information for the Autobahn, where some sections do not have speed limits. The dataset includes details on crash fatalities, vehicle types, and factors influencing crash severity.
+
+### Loading the Data
+
+First, we will load both datasets into R for further analysis.
+
+```{r load_data, warning=FALSE, message=FALSE}
+# Load necessary packages
+library(dplyr)
+library(ggplot2)
+library(readxl)
+
+# Load the U.S. crash data
+#us_crash_data <- read.csv("US.csv")
+
+# Load the Autobahn crash data
+#autobahn_data <- read_excel("AutoBahn.xls")
+
+# View the structure of both datasets
+#str(us_crash_data)
+#str(autobahn_data)
+```
+
+### Initial Data Cleaning
+
+We will start by cleaning both datasets to remove missing or incorrect data entries, harmonize variable names, and prepare them for comparison.
+
+```{r data_cleaning, warning=FALSE, message=FALSE}
+# Cleaning U.S. crash data
+#us_crash_data_clean <- us_crash_data
+
+# Cleaning Autobahn crash data
+#autobahn_data_clean <- autobahn_data
+
+# Summary of cleaned datasets
+#summary(us_crash_data_clean)
+#summary(autobahn_data_clean)
+```
+
+### Marginal Summaries
+
+After cleaning the data, we generate marginal summaries to understand the distribution of key variables, such as **crash severity**, **vehicle type**, and **speeding involvement** in both datasets.
+
+```{r marginal_summaries, warning=FALSE, message=FALSE}
+# Marginal summaries of U.S. crash data
+#summary(us_crash_data_clean$crash_severity)
+#table(us_crash_data_clean$vehicle_type)
+#table(us_crash_data_clean$speeding)
+
+# Marginal summaries of Autobahn crash data
+#summary(autobahn_data_clean$Crash_Severity)
+#table(autobahn_data_clean$Vehicle_Type)
+#table(autobahn_data_clean$Fatality)
+```
+
+## Questions to Be Addressed
+
+### Fleshed Out Project Idea
+
+The primary questions we aim to address in this project are:
+
+1. **How does speeding impact the severity of crashes on U.S. roads compared to the Autobahn?**
+   - We will investigate whether crashes involving speeding tend to have higher severity in the U.S. compared to the Autobahn, where some segments have no speed limit.
+
+2. **Is there a significant difference in crash fatality rates between U.S. crashes and Autobahn crashes?**
+   - We will compare the fatality rates of crashes on U.S. roads versus those on the Autobahn to understand the impact of speed limits on crash outcomes.
+
+3. **Do certain vehicle types result in more severe crashes on U.S. roads compared to the Autobahn?**
+   - We will examine whether certain vehicle types (e.g., motorcycles, SUVs, trucks) are more prone to severe crashes and compare the results between the U.S. and the Autobahn.
+
+To answer these questions, we will use data visualizations such as **bar charts**, **histograms**, and **scatterplots**, along with **statistical modeling** where appropriate. We also plan to consider possible confounding variables such as weather conditions, road type, and driver behavior.
