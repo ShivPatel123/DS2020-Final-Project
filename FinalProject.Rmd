@@ -85,13 +85,17 @@ After cleaning the data, we generate marginal summaries to understand the distri
 
 The primary questions we aim to address in this project are:
 
-1. **How does speeding impact the severity of crashes on U.S. roads compared to the Autobahn?**
-   - We will investigate whether crashes involving speeding tend to have higher severity in the U.S. compared to the Autobahn, where some segments have no speed limit.
+1. **What speed zones result in the most crashes?**
+   - We will investigate if different speed limits affect the amount of crashes that are in the area, and how severe they are.
 
-2. **Is there a significant difference in crash fatality rates between U.S. crashes and Autobahn crashes?**
-   - We will compare the fatality rates of crashes on U.S. roads versus those on the Autobahn to understand the impact of speed limits on crash outcomes.
+2. **What car type is most commonly found in car crashes?**
+   - We will compare the different types of vehicles (SUV, sedan, etc) and see which cars are safer (In less crashes).
 
-3. **Do certain vehicle types result in more severe crashes on U.S. roads compared to the Autobahn?**
-   - We will examine whether certain vehicle types (e.g., motorcycles, SUVs, trucks) are more prone to severe crashes and compare the results between the U.S. and the Autobahn.
+3. **Is there a higher injury rate correlated with substance abuse??**
+   - We will see DUI's have a correlation with more severe injuries.
+
+
+4. **What factor correlates most with crash severity?**
+    - We will investigate which of the many factors involved in crashes leads to higher rates of severe injuries
 
 To answer these questions, we will use data visualizations such as **bar charts**, **histograms**, and **scatterplots**, along with **statistical modeling** where appropriate. We also plan to consider possible confounding variables such as weather conditions, road type, and driver behavior.
