@@ -79,6 +79,38 @@ After cleaning the data, we generate marginal summaries to understand the distri
 #table(autobahn_data_clean$Fatality)
 ```
 
+### Question 1
+
+```{r}
+
+
+```
+
+
+### Question 2
+
+```{r}
+
+
+```
+
+
+### Question 3
+
+```{r}
+
+
+```
+
+
+### Question 4
+
+```{r}
+
+
+```
+
+
 ## Questions to Be Addressed
 
 ### Fleshed Out Project Idea
