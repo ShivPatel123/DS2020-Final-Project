@@ -1,133 +1,130 @@
 ---
-title: 'Impact of Speeding and Vehicle Types on Crash Severity'
-author: "Team Members: Shivansh Patel, Manas Mathur, Muhammad Saleem"
-output: html_document
+title: 'Analysis of Traffic Crash Patterns and Their Contributing Factors'
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-## Research Topic
+## Introduction
 
-The research project aims to analyze the **impact of speeding and vehicle types on crash severity**. We are interested in understanding whether there is a significant relationship between different vehicle types, speeding incidents, and the severity of crashes that occur on the roads. Additionally, we will compare the **crash fatality rate of U.S. crashes** with crashes on the **Autobahn**, where there are segments with no speed limit, to understand the impact of speed regulations on crash outcomes.
+This analysis explores traffic crash patterns in our dataset, focusing on key factors that influence crash occurrence and severity. We investigate the relationships between speed limits, vehicle types, substance abuse, and various other factors that contribute to traffic accidents.
 
-## Team Members
+## Data Preparation
 
-- Shivansh Patel
-- Manas Mathur
-- Muhammad Saleem
-
-## Data Description and Cleaning Steps
-
-For our analysis, we will use multiple datasets obtained from the following sources:
-
-- **U.S. Crash Data**: Data obtained from [catalog.data.gov](https://catalog.data.gov/dataset/crash-reporting-drivers-data/resource/9851a37f-4f32-464e-8ba6-c23023653a7f) and other sources like the [Insurance Institute for Highway Safety (IIHS)](https://www.iihs.org/topics/fatality-statistics/detail/yearly-snapshot) and the [National Highway Traffic Safety Administration (NHTSA)](https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/CISS/). This dataset (`US.csv`) contains detailed information on crashes that occurred in the United States, including vehicle types, speeding status, crash severity, and weather conditions.
-
-- **Autobahn Crash Data**: Data obtained from an **Excel dataset titled `AutoBahn.xls`** that contains crash information for the Autobahn, where some sections do not have speed limits. The dataset includes details on crash fatalities, vehicle types, and factors influencing crash severity.
-
-### Loading the Data
-
-First, we will load both datasets into R for further analysis.
-
-```{r load_data, warning=FALSE, message=FALSE}
-# Load necessary packages
+```{r load-libraries}
+# Load required libraries
 library(dplyr)
 library(ggplot2)
-library(readxl)
-
-# Load the U.S. crash data
-#us_crash_data <- read.csv("US.csv")
-
-# Load the Autobahn crash data
-#autobahn_data <- read_excel("AutoBahn.xls")
-
-# View the structure of both datasets
-#str(us_crash_data)
-#str(autobahn_data)
+library(tidyr)
+library(lubridate)
+library(scales)
 ```
 
-### Initial Data Cleaning
+```{r load-data}
+# Load the dataset
+crash_data <- read.csv("US.csv")
 
-We will start by cleaning both datasets to remove missing or incorrect data entries, harmonize variable names, and prepare them for comparison.
-
-```{r data_cleaning, warning=FALSE, message=FALSE}
-# Cleaning U.S. crash data
-#us_crash_data_clean <- us_crash_data
-
-# Cleaning Autobahn crash data
-#autobahn_data_clean <- autobahn_data
-
-# Summary of cleaned datasets
-#summary(us_crash_data_clean)
-#summary(autobahn_data_clean)
+# Initial data cleaning and preprocessing
+crash_clean <- crash_data %>%
+  # Add your cleaning steps here
+  na.omit()  # Remove NA values (adjust as needed)
 ```
 
-### Marginal Summaries
+## Analysis 1: Speed Zones and Crash Patterns
 
-After cleaning the data, we generate marginal summaries to understand the distribution of key variables, such as **crash severity**, **vehicle type**, and **speeding involvement** in both datasets.
+### Research Question
+What speed zones result in the most crashes, and how does this affect crash severity?
 
-```{r marginal_summaries, warning=FALSE, message=FALSE}
-# Marginal summaries of U.S. crash data
-#summary(us_crash_data_clean$crash_severity)
-#table(us_crash_data_clean$vehicle_type)
-#table(us_crash_data_clean$speeding)
+```{r speed-analysis}
+# Analysis of crashes by speed limit
+speed_summary <- crash_clean %>%
+  group_by(Speed.Limit) %>%
+  summarise(
+    crash_count = n(),
+    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
+    severity_rate = severe_crashes / crash_count
+  )
 
-# Marginal summaries of Autobahn crash data
-#summary(autobahn_data_clean$Crash_Severity)
-#table(autobahn_data_clean$Vehicle_Type)
-#table(autobahn_data_clean$Fatality)
+# Visualization code will go here
 ```
 
-### Question 1
+## Analysis 2: Vehicle Types in Crashes
 
-```{r}
+### Research Question
+What car types are most commonly found in crashes, and is there a relationship with crash severity?
 
+```{r vehicle-analysis}
+# Analysis of crashes by vehicle type
+vehicle_summary <- crash_clean %>%
+  group_by(Vehicle.Body.Type) %>%
+  summarise(
+    crash_count = n(),
+    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
+    severity_rate = severe_crashes / crash_count
+  )
 
+# Visualization code will go here
 ```
 
+## Analysis 3: Substance Abuse and Injury Correlation
 
-### Question 2
+### Research Question
+Is there a higher injury rate correlated with substance abuse?
 
-```{r}
+```{r substance-analysis}
+# Analysis of substance abuse and injury severity
+substance_summary <- crash_clean %>%
+  group_by(Driver.Substance.Abuse) %>%
+  summarise(
+    crash_count = n(),
+    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
+    severity_rate = severe_crashes / crash_count
+  )
 
-
+# Visualization code will go here
 ```
 
+## Analysis 4: Factors Affecting Crash Severity
 
-### Question 3
+### Research Question
+What factors correlate most strongly with crash severity?
 
-```{r}
+```{r severity-analysis}
+# Analysis of various factors and their correlation with severity
+# Consider factors like:
+# - Weather conditions
+# - Time of day
+# - Traffic control presence
+# - Driver distraction
+# - Vehicle movement
 
-
+# Code for correlation analysis will go here
 ```
 
+## Statistical Testing
 
-### Question 4
-
-```{r}
-
-
+```{r statistical-tests}
+# Chi-square tests, regression analysis, or other appropriate statistical tests
+# will be added here based on the specific relationships we're testing
 ```
 
+## Conclusions
 
-## Questions to Be Addressed
+[Your conclusions will go here after completing the analysis]
 
-### Fleshed Out Project Idea
+## Recommendations
 
-The primary questions we aim to address in this project are:
+[Your recommendations based on the findings will go here]
 
-1. **What speed zones result in the most crashes?**
-   - We will investigate if different speed limits affect the amount of crashes that are in the area, and how severe they are.
+## References
 
-2. **What car type is most commonly found in car crashes?**
-   - We will compare the different types of vehicles (SUV, sedan, etc) and see which cars are safer (In less crashes).
-
-3. **Is there a higher injury rate correlated with substance abuse??**
-   - We will see DUI's have a correlation with more severe injuries.
-
-
-4. **What factor correlates most with crash severity?**
-    - We will investigate which of the many factors involved in crashes leads to higher rates of severe injuries
-
-To answer these questions, we will use data visualizations such as **bar charts**, **histograms**, and **scatterplots**, along with **statistical modeling** where appropriate. We also plan to consider possible confounding variables such as weather conditions, road type, and driver behavior.
+[Add any references or data sources used]
