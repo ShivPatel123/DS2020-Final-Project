@@ -1,7 +1,7 @@
 ---
 title: 'Analysis of Traffic Crash Patterns and Their Contributing Factors'
-author: "Your Name"
-date: "`r Sys.Date()`"
+author: "Shivansh Patel, Manas Mathur, Muhammad Raham Saleem"
+subtitle: 'DS2020 - Final Project'
 output: 
   html_document:
     toc: true
@@ -26,17 +26,93 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(lubridate)
+library(corrplot)
+library(forcats)
 library(scales)
-```
 
-```{r load-data}
 # Load the dataset
 crash_data <- read.csv("US.csv")
 
-# Initial data cleaning and preprocessing
+# Basic text cleaning function
+clean_text_column <- function(x) {
+  x <- toupper(trimws(x))
+  x[x == ""] <- "UNKNOWN"
+  x[is.na(x)] <- "UNKNOWN"
+  return(x)
+}
+
+# Clean and standardize the data
 crash_clean <- crash_data %>%
-  # Add your cleaning steps here
-  na.omit()  # Remove NA values (adjust as needed)
+  # First clean all character columns
+  mutate(across(where(is.character), clean_text_column)) %>%
+  # Then handle specific columns
+  mutate(
+    Weather = case_when(
+      Weather == "N/A" ~ "UNKNOWN",
+      grepl("FREEZING RAIN|FREEZING DRIZZLE", Weather) ~ "FREEZING PRECIPITATION",
+      grepl("BLOWING", Weather) ~ "BLOWING WEATHER",
+      TRUE ~ Weather
+    ),
+    Traffic.Control = case_when(
+      Traffic.Control == "N/A" ~ "UNKNOWN",
+      grepl("SIGNAL", Traffic.Control) ~ "TRAFFIC SIGNAL",
+      TRUE ~ Traffic.Control
+    ),
+    Driver.Substance.Abuse = case_when(
+      Driver.Substance.Abuse == "N/A" ~ "UNKNOWN",
+      Driver.Substance.Abuse == "NONE DETECTED" ~ "NONE",
+      TRUE ~ Driver.Substance.Abuse
+    ),
+    Vehicle.Body.Type = case_when(
+      Vehicle.Body.Type == "N/A" ~ "UNKNOWN",
+      grepl("PASSENGER", Vehicle.Body.Type) ~ "PASSENGER VEHICLE",
+      TRUE ~ Vehicle.Body.Type
+    )
+  )
+
+# Handle rare categories directly
+crash_clean <- crash_clean %>%
+  # Weather categories
+  group_by(Weather) %>%
+  mutate(count = n()) %>%
+  ungroup() %>%
+  mutate(Weather = if_else(count < nrow(crash_clean) * 0.001, "OTHER", Weather)) %>%
+  select(-count) %>%
+  
+  # Traffic Control categories
+  group_by(Traffic.Control) %>%
+  mutate(count = n()) %>%
+  ungroup() %>%
+  mutate(Traffic.Control = if_else(count < nrow(crash_clean) * 0.001, "OTHER", Traffic.Control)) %>%
+  select(-count) %>%
+  
+  # Vehicle Body Type categories
+  group_by(Vehicle.Body.Type) %>%
+  mutate(count = n()) %>%
+  ungroup() %>%
+  mutate(Vehicle.Body.Type = if_else(count < nrow(crash_clean) * 0.001, "OTHER", Vehicle.Body.Type)) %>%
+  select(-count)
+
+# Create severity score
+crash_severity <- crash_clean %>%
+  mutate(
+    severity_score = case_when(
+      Injury.Severity == "FATAL INJURY" ~ 4,
+      Injury.Severity == "SUSPECTED SERIOUS INJURY" ~ 3,
+      Injury.Severity == "SUSPECTED MINOR INJURY" ~ 2,
+      Injury.Severity == "POSSIBLE INJURY" ~ 1,
+      Injury.Severity == "NO APPARENT INJURY" ~ 0,
+      TRUE ~ NA_real_
+    )
+  )
+
+# Print summary to verify the cleaning
+cat("Unique values in Weather after cleaning:\n")
+print(table(crash_clean$Weather))
+cat("\nUnique values in Traffic.Control after cleaning:\n")
+print(table(crash_clean$Traffic.Control))
+cat("\nUnique values in Vehicle.Body.Type after cleaning:\n")
+print(table(crash_clean$Vehicle.Body.Type))
 ```
 
 ## Analysis 1: Speed Zones and Crash Patterns
@@ -116,23 +192,189 @@ substance_summary <- crash_clean %>%
 ### Research Question
 What factors correlate most strongly with crash severity?
 
-```{r severity-analysis}
-# Analysis of various factors and their correlation with severity
-# Consider factors like:
-# - Weather conditions
-# - Time of day
-# - Traffic control presence
-# - Driver distraction
-# - Vehicle movement
+```{r time-analysis}
+# Extract hour from Crash.Date.Time
+crash_severity <- crash_severity %>%
+  mutate(
+    crash_hour = hour(as.POSIXct(Crash.Date.Time, format="%m/%d/%Y %I:%M:%S %p")),
+    time_of_day = case_when(
+      crash_hour >= 5 & crash_hour < 12 ~ "Morning",
+      crash_hour >= 12 & crash_hour < 17 ~ "Afternoon",
+      crash_hour >= 17 & crash_hour < 22 ~ "Evening",
+      TRUE ~ "Night"
+    )
+  )
 
-# Code for correlation analysis will go here
+# Analyze severity by time of day
+time_severity <- crash_severity %>%
+  group_by(time_of_day) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  )
+
+# Visualize time of day patterns
+ggplot(time_severity, aes(x = time_of_day, y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Time of Day",
+    x = "Time of Day",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal()
 ```
 
-## Statistical Testing
+```{r weather-analysis}
+# Analyze severity by weather conditions
+weather_severity <- crash_severity %>%
+  group_by(Weather) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%
+  filter(!is.na(Weather), Weather != "", crash_count > 10)  # Remove sparse categories
+
+# Visualize weather patterns
+ggplot(weather_severity, aes(x = reorder(Weather, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "darkred") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Weather Condition",
+    x = "Weather Condition",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r traffic-control-analysis}
+# Analyze severity by traffic control presence
+control_severity <- crash_severity %>%
+  group_by(Traffic.Control) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%
+  filter(!is.na(Traffic.Control), Traffic.Control != "", crash_count > 10)
+
+# Visualize traffic control patterns
+ggplot(control_severity, aes(x = reorder(Traffic.Control, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "forestgreen") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Traffic Control Type",
+    x = "Traffic Control",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r distraction-analysis}
+# Analyze severity by driver distraction
+distraction_severity <- crash_severity %>%
+  group_by(Driver.Distracted.By) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%
+  filter(!is.na(Driver.Distracted.By), Driver.Distracted.By != "", crash_count > 10)
+
+# Visualize distraction patterns
+ggplot(distraction_severity, aes(x = reorder(Driver.Distracted.By, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "purple") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Driver Distraction",
+    x = "Distraction Type",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r movement-analysis}
+# Analyze severity by vehicle movement
+movement_severity <- crash_severity %>%
+  group_by(Vehicle.Movement) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%
+  filter(!is.na(Vehicle.Movement), Vehicle.Movement != "", crash_count > 10)
+
+# Visualize movement patterns
+ggplot(movement_severity, aes(x = reorder(Vehicle.Movement, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Vehicle Movement",
+    x = "Vehicle Movement",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 ```{r statistical-tests}
-# Chi-square tests, regression analysis, or other appropriate statistical tests
-# will be added here based on the specific relationships we're testing
+# Chi-square test for categorical variables
+# Weather and Severity
+weather_chi <- table(crash_severity$Weather, crash_severity$Injury.Severity)
+weather_test <- chisq.test(weather_chi)
+
+# Traffic Control and Severity
+control_chi <- table(crash_severity$Traffic.Control, crash_severity$Injury.Severity)
+control_test <- chisq.test(control_chi)
+
+# Create a summary of statistical tests
+test_results <- data.frame(
+  Factor = c("Weather", "Traffic Control"),
+  Chi_Square = c(weather_test$statistic, control_test$statistic),
+  P_Value = c(weather_test$p.value, control_test$p.value)
+)
+
+# Print test results
+print(test_results)
+
+# Perform logistic regression for severe crashes
+crash_severity$is_severe <- crash_severity$severity_score >= 3
+
+# Create logistic regression model
+severe_model <- glm(is_severe ~ 
+                     Weather + 
+                     time_of_day + 
+                     Traffic.Control + 
+                     Vehicle.Movement,
+                   data = crash_severity,
+                   family = "binomial")
+
+# Print model summary
+summary(severe_model)
+```
+
+```{r create-summary-table}
+# Create a summary table of the most significant factors
+factor_summary <- data.frame(
+  Factor = c("Time of Day", "Weather", "Traffic Control", 
+             "Driver Distraction", "Vehicle Movement"),
+  Average_Severity = c(
+    max(time_severity$avg_severity),
+    max(weather_severity$avg_severity),
+    max(control_severity$avg_severity),
+    max(distraction_severity$avg_severity),
+    max(movement_severity$avg_severity)
+  ),
+  Most_Severe_Category = c(
+    time_severity$time_of_day[which.max(time_severity$avg_severity)],
+    weather_severity$Weather[which.max(weather_severity$avg_severity)],
+    control_severity$Traffic.Control[which.max(control_severity$avg_severity)],
+    distraction_severity$Driver.Distracted.By[which.max(distraction_severity$avg_severity)],
+    movement_severity$Vehicle.Movement[which.max(movement_severity$avg_severity)]
+  )
+)
+
+# Print the summary table
+print(factor_summary)
 ```
 
 ## Conclusions
