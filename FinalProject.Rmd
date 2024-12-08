@@ -46,13 +46,31 @@ What speed zones result in the most crashes, and how does this affect crash seve
 
 ```{r speed-analysis}
 # Analysis of crashes by speed limit
-speed_summary <- crash_clean %>%
-  group_by(Speed.Limit) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
-  )
+
+# Assuming your data frame is called 'crash_data'
+speed_limit_crashes <- table(crash_data$Speed.Limit)
+speed_limit_summary <- data.frame(
+    speed_limit = names(speed_limit_crashes),
+    crash_count = as.numeric(speed_limit_crashes)
+)
+
+# Sort by crash count in descending order
+speed_limit_summary <- speed_limit_summary[order(-speed_limit_summary$crash_count), ]
+
+# View the results
+print(speed_limit_summary)
+
+# Create a bar plot
+library(ggplot2)
+ggplot(speed_limit_summary, aes(x = speed_limit, y = crash_count)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    theme_minimal() +
+    labs(
+        title = "Crash Frequency by Speed Limit",
+        x = "Speed Limit",
+        y = "Number of Crashes"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Visualization code will go here
 ```
