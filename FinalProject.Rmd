@@ -92,25 +92,7 @@ vehicle_summary <- crash_clean %>%
 # Visualization code will go here
 ```
 
-## Analysis 3: Substance Abuse and Injury Correlation
-
-### Research Question
-Is there a higher injury rate correlated with substance abuse?
-
-```{r substance-analysis}
-# Analysis of substance abuse and injury severity
-substance_summary <- crash_clean %>%
-  group_by(Driver.Substance.Abuse) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
-  )
-
-# Visualization code will go here
-```
-
-## Analysis 4: Factors Affecting Crash Severity
+## Analysis 3: Factors Affecting Crash Severity
 
 ### Research Question
 What factors correlate most strongly with crash severity?
@@ -278,14 +260,14 @@ summary(severe_model)
 ```{r create-summary-table}
 # Create a summary table of the most significant factors
 factor_summary <- data.frame(
-  Factor = c("Time of Day", "Weather", "Traffic Control", 
+  Factor = c("Time of Day", "Weather", "Traffic Control",
              "Driver Distraction", "Vehicle Movement"),
   Average_Severity = c(
-    max(time_severity$avg_severity),
-    max(weather_severity$avg_severity),
-    max(control_severity$avg_severity),
-    max(distraction_severity$avg_severity),
-    max(movement_severity$avg_severity)
+    mean(time_severity$avg_severity, na.rm = TRUE),
+    mean(weather_severity$avg_severity, na.rm = TRUE),
+    mean(control_severity$avg_severity, na.rm = TRUE),
+    mean(distraction_severity$avg_severity, na.rm = TRUE),
+    mean(movement_severity$avg_severity, na.rm = TRUE)
   ),
   Most_Severe_Category = c(
     time_severity$time_of_day[which.max(time_severity$avg_severity)],
@@ -296,8 +278,15 @@ factor_summary <- data.frame(
   )
 )
 
-# Print the summary table
-print(factor_summary)
+# Add error checking
+factor_summary <- factor_summary %>%
+  mutate(
+    Average_Severity = round(Average_Severity, 3),
+    Average_Severity = ifelse(is.nan(Average_Severity), NA, Average_Severity)
+  )
+
+# Print the summary table with better formatting
+print(factor_summary, row.names = FALSE)
 ```
 
 ## Conclusions
