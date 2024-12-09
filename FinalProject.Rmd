@@ -29,72 +29,21 @@ library(lubridate)
 library(corrplot)
 library(forcats)
 library(scales)
+```
 
+```{r load-data}
 # Load the dataset
 crash_data <- read.csv("US.csv")
 
-# Basic text cleaning function
-clean_text_column <- function(x) {
-  x <- toupper(trimws(x))
-  x[x == ""] <- "UNKNOWN"
-  x[is.na(x)] <- "UNKNOWN"
-  return(x)
-}
-
-# Clean and standardize the data
+# Initial data cleaning and preprocessing
 crash_clean <- crash_data %>%
-  # First clean all character columns
-  mutate(across(where(is.character), clean_text_column)) %>%
-  # Then handle specific columns
-  mutate(
-    Weather = case_when(
-      Weather == "N/A" ~ "UNKNOWN",
-      grepl("FREEZING RAIN|FREEZING DRIZZLE", Weather) ~ "FREEZING PRECIPITATION",
-      grepl("BLOWING", Weather) ~ "BLOWING WEATHER",
-      TRUE ~ Weather
-    ),
-    Traffic.Control = case_when(
-      Traffic.Control == "N/A" ~ "UNKNOWN",
-      grepl("SIGNAL", Traffic.Control) ~ "TRAFFIC SIGNAL",
-      TRUE ~ Traffic.Control
-    ),
-    Driver.Substance.Abuse = case_when(
-      Driver.Substance.Abuse == "N/A" ~ "UNKNOWN",
-      Driver.Substance.Abuse == "NONE DETECTED" ~ "NONE",
-      TRUE ~ Driver.Substance.Abuse
-    ),
-    Vehicle.Body.Type = case_when(
-      Vehicle.Body.Type == "N/A" ~ "UNKNOWN",
-      grepl("PASSENGER", Vehicle.Body.Type) ~ "PASSENGER VEHICLE",
-      TRUE ~ Vehicle.Body.Type
-    )
-  )
+  # Add your cleaning steps here
+  na.omit()  # Remove NA values (adjust as needed)
+```
 
-# Handle rare categories directly
-crash_clean <- crash_clean %>%
-  # Weather categories
-  group_by(Weather) %>%
-  mutate(count = n()) %>%
-  ungroup() %>%
-  mutate(Weather = if_else(count < nrow(crash_clean) * 0.001, "OTHER", Weather)) %>%
-  select(-count) %>%
-  
-  # Traffic Control categories
-  group_by(Traffic.Control) %>%
-  mutate(count = n()) %>%
-  ungroup() %>%
-  mutate(Traffic.Control = if_else(count < nrow(crash_clean) * 0.001, "OTHER", Traffic.Control)) %>%
-  select(-count) %>%
-  
-  # Vehicle Body Type categories
-  group_by(Vehicle.Body.Type) %>%
-  mutate(count = n()) %>%
-  ungroup() %>%
-  mutate(Vehicle.Body.Type = if_else(count < nrow(crash_clean) * 0.001, "OTHER", Vehicle.Body.Type)) %>%
-  select(-count)
-
-# Create severity score
-crash_severity <- crash_clean %>%
+```{r create-severity-score}
+# Create a severity score for easier analysis
+crash_severity <- crash_data %>%
   mutate(
     severity_score = case_when(
       Injury.Severity == "FATAL INJURY" ~ 4,
@@ -105,14 +54,6 @@ crash_severity <- crash_clean %>%
       TRUE ~ NA_real_
     )
   )
-
-# Print summary to verify the cleaning
-cat("Unique values in Weather after cleaning:\n")
-print(table(crash_clean$Weather))
-cat("\nUnique values in Traffic.Control after cleaning:\n")
-print(table(crash_clean$Traffic.Control))
-cat("\nUnique values in Vehicle.Body.Type after cleaning:\n")
-print(table(crash_clean$Vehicle.Body.Type))
 ```
 
 ## Analysis 1: Speed Zones and Crash Patterns
@@ -151,25 +92,7 @@ vehicle_summary <- crash_clean %>%
 # Visualization code will go here
 ```
 
-## Analysis 3: Substance Abuse and Injury Correlation
-
-### Research Question
-Is there a higher injury rate correlated with substance abuse?
-
-```{r substance-analysis}
-# Analysis of substance abuse and injury severity
-substance_summary <- crash_clean %>%
-  group_by(Driver.Substance.Abuse) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
-  )
-
-# Visualization code will go here
-```
-
-## Analysis 4: Factors Affecting Crash Severity
+## Analysis 3: Factors Affecting Crash Severity
 
 ### Research Question
 What factors correlate most strongly with crash severity?
@@ -337,14 +260,14 @@ summary(severe_model)
 ```{r create-summary-table}
 # Create a summary table of the most significant factors
 factor_summary <- data.frame(
-  Factor = c("Time of Day", "Weather", "Traffic Control", 
+  Factor = c("Time of Day", "Weather", "Traffic Control",
              "Driver Distraction", "Vehicle Movement"),
   Average_Severity = c(
-    max(time_severity$avg_severity),
-    max(weather_severity$avg_severity),
-    max(control_severity$avg_severity),
-    max(distraction_severity$avg_severity),
-    max(movement_severity$avg_severity)
+    mean(time_severity$avg_severity, na.rm = TRUE),
+    mean(weather_severity$avg_severity, na.rm = TRUE),
+    mean(control_severity$avg_severity, na.rm = TRUE),
+    mean(distraction_severity$avg_severity, na.rm = TRUE),
+    mean(movement_severity$avg_severity, na.rm = TRUE)
   ),
   Most_Severe_Category = c(
     time_severity$time_of_day[which.max(time_severity$avg_severity)],
@@ -355,8 +278,15 @@ factor_summary <- data.frame(
   )
 )
 
-# Print the summary table
-print(factor_summary)
+# Add error checking
+factor_summary <- factor_summary %>%
+  mutate(
+    Average_Severity = round(Average_Severity, 3),
+    Average_Severity = ifelse(is.nan(Average_Severity), NA, Average_Severity)
+  )
+
+# Print the summary table with better formatting
+print(factor_summary, row.names = FALSE)
 ```
 
 ## Conclusions
