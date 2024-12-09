@@ -124,7 +124,7 @@ What speed zones result in the most crashes, and how does this affect crash seve
 # Analysis of crashes by speed limit
 
 # Assuming your data frame is called 'crash_data'
-speed_limit_crashes <- table(crash_data$Speed.Limit)
+speed_limit_crashes <- table(crash_clean$Speed.Limit)
 speed_limit_summary <- data.frame(
     speed_limit = names(speed_limit_crashes),
     crash_count = as.numeric(speed_limit_crashes)
@@ -148,8 +148,9 @@ ggplot(speed_limit_summary, aes(x = speed_limit, y = crash_count)) +
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Visualization code will go here
 ```
+
+
 
 ## Analysis 2: Vehicle Types in Crashes
 
