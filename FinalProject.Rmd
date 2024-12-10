@@ -170,25 +170,7 @@ vehicle_summary <- crash_clean %>%
 # Visualization code will go here
 ```
 
-## Analysis 3: Substance Abuse and Injury Correlation
-
-### Research Question
-Is there a higher injury rate correlated with substance abuse?
-
-```{r substance-analysis}
-# Analysis of substance abuse and injury severity
-substance_summary <- crash_clean %>%
-  group_by(Driver.Substance.Abuse) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
-  )
-
-# Visualization code will go here
-```
-
-## Analysis 4: Factors Affecting Crash Severity
+## Analysis 3: Factors Affecting Crash Severity
 
 ### Research Question
 What factors correlate most strongly with crash severity?
