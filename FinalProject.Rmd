@@ -162,7 +162,7 @@ library(sf)
 library(tigris)
 library(dplyr)
 library(lubridate)
-# Create dataframe with coordinates
+
 crash_coords <- crash_clean %>% 
   select(Longitude, Latitude)
 
@@ -171,7 +171,7 @@ nrow(crash_coords)
 crash_sf <- st_as_sf(crash_coords, coords = c("Longitude", "Latitude"), crs = 4326)
 
 states <- states(cb = TRUE) %>%
-  st_transform(crs = 4326)  # Transform states to WGS84
+  st_transform(crs = 4326)  
 
 crash_with_states <- st_join(crash_sf, states["NAME"])
 
@@ -186,6 +186,7 @@ crash_clean_with_states <- crash_clean %>%
   rename(state = NAME) %>%
   select(-row_num)
 
+# Filtering data to only focus on Maryland and reports with injuries
 crash_maryland <- crash_clean_with_states %>% 
   mutate(date = mdy_hms(Crash.Date.Time)) %>%
   filter(year(date) == 2024,
