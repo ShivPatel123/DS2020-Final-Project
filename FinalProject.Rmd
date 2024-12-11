@@ -186,21 +186,130 @@ crash_clean_with_states <- crash_clean %>%
   rename(state = NAME) %>%
   select(-row_num)
 
-crash_maryland <- crash_clean_with_states %>% 
+crash_maryland_injuries <- crash_clean_with_states %>% 
   mutate(date = mdy_hms(Crash.Date.Time)) %>%
   filter(year(date) == 2024,
-         state == "Maryland", 
+#         state == "Maryland", 
          Injury.Severity != "NO APPARENT INJURY",
+#         Injury.Severity != "POSSIBLE INJURY",
          Injury.Severity != "UNKNOWN",
-         Injury.Severity != "POSSIBLE INJURY")
+         Vehicle.First.Impact.Location != "NON-COLLISION",
+         Vehicle.First.Impact.Location != "VEHICLE NOT AT SCENE")
+
+colnames(crash_maryland_injuries)
 
 ```
+
+```{r}
+colnames(crash_maryland_injuries)
+
+unique(crash_maryland_injuries$Injury.Severity)
+
+crash_maryland_injuries$Injury.Severity <- factor(crash_maryland_injuries$Injury.Severity, levels = c('SUSPECTED MINOR INJURY', 'SUSPECTED SERIOUS INJURY', 'FATAL INJURY'))
+
+# First, create a contingency table
+impact_injury_table <- table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                              crash_maryland_injuries$Injury.Severity)
+
+# Convert to percentages if you want to see proportions
+impact_injury_prop <- prop.table(impact_injury_table, margin = 1) * 100
+
+
+
+
+# Create the plot with reordered bars
+ggplot(data = as.data.frame.table(impact_injury_prop), 
+       aes(x = reorder(Var1, -table(Var1)), y = Freq, fill = Var2)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(x = "Impact Location", 
+       y = "Count",
+       fill = "Injury Severity",
+       title = "Relationship between Impact Location and Injury Severity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r}
+# Chi-square test of independence
+chisq_test <- chisq.test(table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                              crash_maryland_injuries$Injury.Severity))
+
+chisq_test
+# Effect size using Cramer's V
+library(effectsize)
+cramers_v <- cramers_v(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                       crash_maryland_injuries$Injury.Severity)
+
+# Standardized residuals to see which combinations occur more/less than expected
+stdres <- chisq_test$stdres
+stdres
+```
+```{r}
+# Simple frequency table
+impact_freq <- table(crash_maryland_injuries$Vehicle.First.Impact.Location)
+# Sort in descending order
+impact_freq_sorted <- sort(impact_freq, decreasing = TRUE)
+
+# Chi-square goodness of fit test (tests against uniform distribution)
+impact_chisq <- chisq.test(impact_freq)
+
+# Visual representation
+library(ggplot2)
+impact_df <- data.frame(
+  location = names(impact_freq),
+  count = as.numeric(impact_freq)
+)
+
+ggplot(impact_df, aes(x = reorder(location, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Impact Location",
+       y = "Frequency",
+       title = "Distribution of Vehicle Impact Locations")
+```
+
+```{r}
+# Calculate weights (inverse of class frequencies)
+weights <- 1 / table(crash_maryland_injuries$Vehicle.First.Impact.Location)
+weights <- weights[crash_maryland_injuries$Vehicle.First.Impact.Location]
+
+# Use weights in your analysis
+weighted.chisq <- chisq.test(table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                                  crash_maryland_injuries$Injury.Severity),
+                            weights)
+weighted.chisq
+```
+```{r}
+
+
+
+first_impact_severity <- crash_severity %>%
+  group_by(Vehicle.First.Impact.Location) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%  filter(Vehicle.First.Impact.Location != "UNKNOWN", Vehicle.First.Impact.Location != "VEHICLE NOT AT SCENE",crash_count > 10)
+
+ggplot(first_impact_severity, aes(x = reorder(Vehicle.First.Impact.Location, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "black") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Vehicle Impact Location",
+    x = "Type of impact",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
 
 ```{r}
 library(mapview)
 
 
-crash_maryland_sf <- st_as_sf(crash_maryland, 
+crash_maryland_sf <- st_as_sf(crash_maryland_injuries, 
                             coords = c("Longitude", "Latitude"), 
                             crs = 4326)
 
@@ -226,7 +335,7 @@ mapview(crash_maryland_sf,
         layer.name = "Crash Severity")
 
 mapview(crash_maryland_sf,
-        zcol = "Speed.Limit",
+        zcol = "Vehicle.First.Impact.Location",
         col.regions = severity_colors,
         cex = 3,
         alpha = 0.8,
