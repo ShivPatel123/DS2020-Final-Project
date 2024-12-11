@@ -139,16 +139,71 @@ speed_summary <- crash_clean %>%
 What car types are most commonly found in crashes, and is there a relationship with crash severity?
 
 ```{r vehicle-analysis}
-# Analysis of crashes by vehicle type
+# Load necessary libraries
+library("dplyr")
+library("ggplot2")
+library("stringr")
+
+# Create a new variable with the first two words of the Vehicle.Body.Type
+crash_clean$Vehicle.Type.Short2 <- str_split(crash_clean$Vehicle.Body.Type, " ") %>%
+  sapply(function(x) {
+    if (length(x) >= 2) {
+      paste(x[1:2], collapse = " ")
+    } else {
+      ""  # Return an empty string if there are fewer than 2 words
+    }
+  })
+
+# Summarize data by short vehicle type (first two words)
 vehicle_summary <- crash_clean %>%
-  group_by(Vehicle.Body.Type) %>%
+  group_by(Vehicle.Type.Short2) %>%
   summarise(
     crash_count = n(),
     severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
     severity_rate = severe_crashes / crash_count
-  )
+  ) %>%
+  arrange(desc(crash_count))  # Order by total crashes
 
-# Visualization code will go here
+# Print the summary table
+print(vehicle_summary)
+
+# Bar chart of crash counts by vehicle type (first two words)
+ggplot(vehicle_summary, aes(x = reorder(Vehicle.Type.Short2, -crash_count), y = crash_count, fill = severity_rate)) +
+  geom_bar(stat = "identity") +
+  scale_fill_gradient(low = "blue", high = "red", name = "Severity Rate") +
+  labs(
+    title = "Crash Counts by Vehicle Type",
+    x = "Vehicle Type",
+    y = "Crash Count"
+  ) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1))
+
+# Heatmap of severity rates by vehicle type
+ggplot(vehicle_summary, aes(x = reorder(Vehicle.Type.Short2, -severity_rate), y = 1, fill = severity_rate)) +
+  geom_tile() +
+  scale_fill_gradient(low = "blue", high = "red") +
+  labs(
+    title = "Heatmap of Crash Severity Rates by Vehicle Type",
+    x = "Vehicle Type",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.text.x = element_text(angle = 70, hjust = 1))
+
+# Boxplot for crash severity rates by vehicle type
+ggplot(vehicle_summary, aes(x = reorder(Vehicle.Type.Short2, severity_rate), y = severity_rate, fill = severity_rate)) +
+  geom_boxplot() +
+  scale_fill_gradient(low = "blue", high = "red") +
+  labs(
+    title = "Crash Severity Rates by Vehicle Type (Boxplot)",
+    x = "Vehicle Type",
+    y = "Severity Rate"
+  ) +
+  #theme(axis.text.x = element_text(angle = 70, hjust = 1)) +  # Rotate x-axis labels by 90 degrees
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.text.x = element_text(angle = 70, hjust = 1))
+  theme_minimal()
+
+
 ```
 
 ## Analysis 3: Substance Abuse and Injury Correlation
