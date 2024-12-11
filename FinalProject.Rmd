@@ -388,11 +388,12 @@ print(factor_summary)
 
 ## Conclusions
 
-[Your conclusions will go here after completing the analysis]
+By taking a look at crash data based in the US, we have determined that a front end impact is the most common type of impact in a crash.
+Cargo-loss often results in a higher severity of injury. Most crashes involve a sedan, which can be understood as they are the most common type of car. Nighttime driving increases risk of injury. A wintery mix (varying amount of snowfall), often leads to greater injury compared to other weather conditions. Cell phone use greatly increases risk of injury.
 
 ## Recommendations
 
-[Your recommendations based on the findings will go here]
+When driving, stay focused on the road and limit distractions. Drive during the day, on clear skys. Keep distance from other cars which are carrying large loads
 
 ## References
 
