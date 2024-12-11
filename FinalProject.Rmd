@@ -115,23 +115,68 @@ cat("\nUnique values in Vehicle.Body.Type after cleaning:\n")
 print(table(crash_clean$Vehicle.Body.Type))
 ```
 
-## Analysis 1: Speed Zones and Crash Patterns
+## Analysis 1: Impact locations and severity of injuries
 
 ### Research Question
-What speed zones result in the most crashes, and how does this affect crash severity?
+What impact locations result in the worse injuries?
 
-```{r speed-analysis}
-# Analysis of crashes by speed limit
-speed_summary <- crash_clean %>%
-  group_by(Speed.Limit) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
-  )
 
-# Visualization code will go here
+```{r}
+impact_freq <- table(crash_maryland_injuries$Vehicle.First.Impact.Location)
+impact_freq_sorted <- sort(impact_freq, decreasing = TRUE)
+
+impact_chisq <- chisq.test(impact_freq)
+
+library(ggplot2)
+impact_df <- data.frame(
+  location = names(impact_freq),
+  count = as.numeric(impact_freq)
+)
+
+ggplot(impact_df, aes(x = reorder(location, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Impact Location",
+       y = "Frequency",
+       title = "Distribution of Vehicle Impact Locations")
 ```
+
+```{r}
+
+weights <- 1 / table(crash_maryland_injuries$Vehicle.First.Impact.Location)
+weights <- weights[crash_maryland_injuries$Vehicle.First.Impact.Location]
+
+
+weighted.chisq <- chisq.test(table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                                  crash_maryland_injuries$Injury.Severity),
+                            weights)
+weighted.chisq
+```
+```{r}
+
+
+
+first_impact_severity <- crash_severity %>%
+  group_by(Vehicle.First.Impact.Location) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%  filter(Vehicle.First.Impact.Location != "UNKNOWN", Vehicle.First.Impact.Location != "VEHICLE NOT AT SCENE",crash_count > 10)
+
+ggplot(first_impact_severity, aes(x = reorder(Vehicle.First.Impact.Location, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "black") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Vehicle Impact Location",
+    x = "Type of impact",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
 
 ## Analysis 2: Vehicle Types in Crashes
 
@@ -206,25 +251,7 @@ ggplot(vehicle_summary, aes(x = reorder(Vehicle.Type.Short2, severity_rate), y =
 
 ```
 
-## Analysis 3: Substance Abuse and Injury Correlation
-
-### Research Question
-Is there a higher injury rate correlated with substance abuse?
-
-```{r substance-analysis}
-# Analysis of substance abuse and injury severity
-substance_summary <- crash_clean %>%
-  group_by(Driver.Substance.Abuse) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
-  )
-
-# Visualization code will go here
-```
-
-## Analysis 4: Factors Affecting Crash Severity
+## Analysis 3: Factors Affecting Crash Severity
 
 ### Research Question
 What factors correlate most strongly with crash severity?
@@ -416,11 +443,12 @@ print(factor_summary)
 
 ## Conclusions
 
-[Your conclusions will go here after completing the analysis]
+By taking a look at crash data based in the US, we have determined that a front end impact is the most common type of impact in a crash.
+Cargo-loss often results in a higher severity of injury. Most crashes involve a sedan, which can be understood as they are the most common type of car. Nighttime driving increases risk of injury. A wintery mix (varying amount of snowfall), often leads to greater injury compared to other weather conditions. Cell phone use greatly increases risk of injury.
 
 ## Recommendations
 
-[Your recommendations based on the findings will go here]
+When driving, stay focused on the road and limit distractions. Drive during the day, on clear skys. Keep distance from other cars which are carrying large loads
 
 ## References
 
