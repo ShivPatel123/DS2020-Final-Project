@@ -118,19 +118,375 @@ print(table(crash_clean$Vehicle.Body.Type))
 ## Analysis 1: Speed Zones and Crash Patterns
 
 ### Research Question
-What speed zones result in the most crashes, and how does this affect crash severity?
+What speed zones result in the most crashes, and how does this affect crash severity
 
 ```{r speed-analysis}
-# Analysis of crashes by speed limit
-speed_summary <- crash_clean %>%
-  group_by(Speed.Limit) %>%
-  summarise(
-    crash_count = n(),
-    severe_crashes = sum(Injury.Severity %in% c("FATAL INJURY", "SUSPECTED SERIOUS INJURY")),
-    severity_rate = severe_crashes / crash_count
+
+
+colnames(crash_clean)
+unique(crash_clean$Driver.Distracted.By)
+
+
+speed_limit_crashes <- table(crash_clean$Speed.Limit)
+speed_limit_summary <- data.frame(
+    speed_limit = names(speed_limit_crashes),
+    crash_count = as.numeric(speed_limit_crashes)
+)
+
+
+speed_limit_summary <- speed_limit_summary[order(-speed_limit_summary$crash_count), ]
+
+
+print(speed_limit_summary)
+
+
+library(ggplot2)
+ggplot(speed_limit_summary, aes(x = speed_limit, y = crash_count)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    theme_minimal() +
+    labs(
+        title = "Crash Frequency by Speed Limit",
+        x = "Speed Limit",
+        y = "Number of Crashes"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+head(crash_clean$Crash.Date.Time, 1)
+
+nrow(crash_clean)
+
+```
+## Analysis 2: Lights, surfaces, and injury severity
+
+### Research Question
+What combinations of lighting and surfaces result in the worst injuries?
+```{r}
+
+crash_analysis <- crash_clean %>%
+  
+  filter(!Light %in% c("N/A", 
+                      "DARK -- UNKNOWN LIGHTING", 
+                      "UNKNOWN", 
+                      "OTHER", 
+                      "DARK - UNKNOWN LIGHTING")) %>%
+  filter(!Surface.Condition %in% c("N/A", 
+                                 "OTHER", 
+                                 "UNKNOWN")) %>%
+
+  mutate(Light = case_when(
+    Light %in% c("DARK LIGHTS ON", "DARK - LIGHTED") ~ "DARK WITH LIGHTS",
+    Light %in% c("DARK NO LIGHTS", "DARK - NOT LIGHTED") ~ "DARK WITHOUT LIGHTS",
+    TRUE ~ Light
+  )) %>%
+
+  mutate(Surface.Condition = case_when(
+    Surface.Condition %in% c("WATER(STANDING/MOVING)", "WATER (STANDING, MOVING)") ~ "WATER (STANDING/MOVING)",
+    TRUE ~ Surface.Condition
+  )) %>%
+  mutate(Surface.Condition = case_when(
+    Surface.Condition %in% c("ICE/FROST", "ICE") ~ "ICE",
+    TRUE ~ Surface.Condition
+  )) %>%
+
+  mutate(
+    severity_score = case_when(
+      Injury.Severity == "FATAL INJURY" ~ 4,
+      Injury.Severity == "SUSPECTED SERIOUS INJURY" ~ 3,
+      Injury.Severity == "SUSPECTED MINOR INJURY" ~ 2,
+      Injury.Severity == "POSSIBLE INJURY" ~ 1,
+      Injury.Severity == "NO APPARENT INJURY" ~ 0,
+      TRUE ~ NA_real_
+    )
   )
 
-# Visualization code will go here
+
+severity_by_conditions <- crash_analysis %>%
+  group_by(Light, Surface.Condition) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    n_crashes = n(),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(avg_severity))
+
+
+print(head(severity_by_conditions, 10))
+
+ggplot(severity_by_conditions, 
+       aes(x = Surface.Condition, 
+           y = avg_severity,
+           fill = Light)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  coord_flip() +  
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 10),
+    panel.grid.major.y = element_blank(), 
+    legend.position = "bottom"
+  ) +
+  labs(title = "Average Crash Severity by Light and Surface Conditions",
+       subtitle = "Severity Score: 0 (No Injury) to 1 (Fatal)",
+       x = "Surface Condition",
+       y = "Average Severity Score",
+       fill = "Lighting Condition")
+
+```
+```{r}
+
+substance_present <- c("ALCOHOL CONTRIBUTED", "ALCOHOL PRESENT",
+                      "COMBINATION CONTRIBUTED", "COMBINED SUBSTANCE PRESENT",
+                      "ILLEGAL DRUG CONTRIBUTED", "ILLEGAL DRUG PRESENT",
+                      "MEDICATION CONTRIBUTED", "MEDICATION PRESENT",
+                      "SUSPECT OF ALCOHOL USE, SUSPECT OF DRUG USE",
+                      "NOT SUSPECT OF ALCOHOL USE, SUSPECT OF DRUG USE",
+                      "SUSPECT OF ALCOHOL USE, NOT SUSPECT OF DRUG USE")
+
+
+crash_analysis <- crash_clean %>%
+  mutate(
+    
+    crash_datetime = as.POSIXct(Crash.Date.Time, format = "%m/%d/%Y %I:%M:%S %p"),
+    
+    day_of_week = weekdays(crash_datetime),
+    
+    day_of_week = factor(day_of_week, 
+                        levels = c("Monday", "Tuesday", "Wednesday", 
+                                 "Thursday", "Friday", "Saturday", "Sunday")),
+    
+    severity_score = case_when(
+      Injury.Severity == "FATAL INJURY" ~ 4,
+      Injury.Severity == "SUSPECTED SERIOUS INJURY" ~ 3,
+      Injury.Severity == "SUSPECTED MINOR INJURY" ~ 2,
+      Injury.Severity == "POSSIBLE INJURY" ~ 1,
+      Injury.Severity == "NO APPARENT INJURY" ~ 0,
+      TRUE ~ NA_real_
+    ),
+
+    has_substance = Driver.Substance.Abuse %in% substance_present
+  )
+
+
+severity_by_day <- crash_analysis %>%
+  group_by(day_of_week, has_substance) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    n_crashes = n(),
+    se = sd(severity_score, na.rm = TRUE) / sqrt(n()),  
+    .groups = 'drop'
+  )
+
+ggplot(severity_by_day) +
+  geom_line(aes(x = day_of_week, 
+                y = avg_severity, 
+                group = has_substance,
+                color = has_substance),
+            size = 1.2) +
+  geom_point(aes(x = day_of_week, 
+                 y = avg_severity,
+                 color = has_substance),
+             size = 3) +
+
+  scale_color_manual(values = c("lightblue", "red"),
+                    labels = c("Non-Substance Related", "Substance Related")) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "Average Crash Severity by Day of Week",
+    subtitle = "Comparing Substance-Related vs Non-Substance-Related Crashes",
+    x = "Day of Week",
+    y = "Average Severity Score (0-4)"
+  )
+```
+
+
+
+
+## Analysis 3: Impact Locations and Crash Patterns
+
+### Research Question
+How do Impact Zones affect crash severity
+
+
+```{r}
+library(sf)
+library(tigris)
+library(dplyr)
+library(lubridate)
+
+crash_coords <- crash_clean %>% 
+  select(Longitude, Latitude)
+
+nrow(crash_coords)
+
+crash_sf <- st_as_sf(crash_coords, coords = c("Longitude", "Latitude"), crs = 4326)
+
+states <- states(cb = TRUE) %>%
+  st_transform(crs = 4326)  
+
+crash_with_states <- st_join(crash_sf, states["NAME"])
+
+crash_states_df <- crash_with_states %>%
+  mutate(row_num = row_number()) %>%
+  st_drop_geometry() %>%
+  select(NAME, row_num)
+
+crash_clean_with_states <- crash_clean %>%
+  mutate(row_num = row_number()) %>%
+  left_join(crash_states_df, by = "row_num") %>%
+  rename(state = NAME) %>%
+  select(-row_num)
+
+crash_maryland_injuries <- crash_clean_with_states %>% 
+  mutate(date = mdy_hms(Crash.Date.Time)) %>%
+  filter(year(date) == 2024,
+#         state == "Maryland", 
+         Injury.Severity != "NO APPARENT INJURY",
+#         Injury.Severity != "POSSIBLE INJURY",
+         Injury.Severity != "UNKNOWN",
+         Vehicle.First.Impact.Location != "NON-COLLISION",
+         Vehicle.First.Impact.Location != "VEHICLE NOT AT SCENE")
+
+colnames(crash_maryland_injuries)
+
+```
+
+```{r}
+colnames(crash_maryland_injuries)
+
+unique(crash_maryland_injuries$Injury.Severity)
+
+crash_maryland_injuries$Injury.Severity <- factor(crash_maryland_injuries$Injury.Severity, levels = c('SUSPECTED MINOR INJURY', 'SUSPECTED SERIOUS INJURY', 'FATAL INJURY'))
+
+impact_injury_table <- table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                              crash_maryland_injuries$Injury.Severity)
+
+impact_injury_prop <- prop.table(impact_injury_table, margin = 1) * 100
+
+
+
+
+ggplot(data = as.data.frame.table(impact_injury_prop), 
+       aes(x = reorder(Var1, -table(Var1)), y = Freq, fill = Var2)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(x = "Impact Location", 
+       y = "Count",
+       fill = "Injury Severity",
+       title = "Relationship between Impact Location and Injury Severity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r}
+chisq_test <- chisq.test(table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                              crash_maryland_injuries$Injury.Severity))
+
+chisq_test
+library(effectsize)
+cramers_v <- cramers_v(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                       crash_maryland_injuries$Injury.Severity)
+
+stdres <- chisq_test$stdres
+stdres
+```
+```{r}
+impact_freq <- table(crash_maryland_injuries$Vehicle.First.Impact.Location)
+impact_freq_sorted <- sort(impact_freq, decreasing = TRUE)
+
+impact_chisq <- chisq.test(impact_freq)
+
+library(ggplot2)
+impact_df <- data.frame(
+  location = names(impact_freq),
+  count = as.numeric(impact_freq)
+)
+
+ggplot(impact_df, aes(x = reorder(location, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Impact Location",
+       y = "Frequency",
+       title = "Distribution of Vehicle Impact Locations")
+```
+
+```{r}
+weights <- 1 / table(crash_maryland_injuries$Vehicle.First.Impact.Location)
+weights <- weights[crash_maryland_injuries$Vehicle.First.Impact.Location]
+
+weighted.chisq <- chisq.test(table(crash_maryland_injuries$Vehicle.First.Impact.Location, 
+                                  crash_maryland_injuries$Injury.Severity),
+                            weights)
+weighted.chisq
+```
+```{r}
+
+
+
+first_impact_severity <- crash_severity %>%
+  group_by(Vehicle.First.Impact.Location) %>%
+  summarise(
+    avg_severity = mean(severity_score, na.rm = TRUE),
+    crash_count = n()
+  ) %>%  filter(Vehicle.First.Impact.Location != "UNKNOWN", Vehicle.First.Impact.Location != "VEHICLE NOT AT SCENE",crash_count > 10)
+
+ggplot(first_impact_severity, aes(x = reorder(Vehicle.First.Impact.Location, -avg_severity), y = avg_severity)) +
+  geom_bar(stat = "identity", fill = "black") +
+  geom_text(aes(label = round(avg_severity, 2)), vjust = -0.5) +
+  labs(
+    title = "Average Crash Severity by Vehicle Impact Location",
+    x = "Type of impact",
+    y = "Average Severity Score"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+```{r}
+library(mapview)
+
+
+crash_maryland_sf <- st_as_sf(crash_maryland_injuries, 
+                            coords = c("Longitude", "Latitude"), 
+                            crs = 4326)
+
+colnames(crash_maryland_sf)
+
+severity_colors <- c("FATAL" = "red",
+                    "NO APPARENT INJURY" = "green",
+                    "POSSIBLE INJURY" = "blue",
+                    "SUSPECTED MINOR INJURY" = "yellow",
+                    "SUSPECTED SERIOUS INJURY" = "orange"
+                    )
+
+
+
+
+mapview(crash_maryland_sf,
+        zcol = "Injury.Severity",
+        col.regions = severity_colors,
+        cex = 3,
+        alpha = 0.8,
+        legend = TRUE,
+        popup = c("Injury.Severity"),
+        layer.name = "Crash Severity")
+
+mapview(crash_maryland_sf,
+        zcol = "Vehicle.First.Impact.Location",
+        col.regions = severity_colors,
+        cex = 3,
+        alpha = 0.8,
+        legend = TRUE,
+        popup = c("Injury.Severity"),
+        layer.name = "Crash Severity")
+
+
+
 ```
 
 ## Analysis 2: Factors Affecting Crash Severity
